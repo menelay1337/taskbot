@@ -1,8 +1,8 @@
 package storage
 
 import (
-	"time"
 	"errors"
+	"time"
 )
 
 type Storage interface {
@@ -14,17 +14,23 @@ type Storage interface {
 	Remove(id int) error
 	//Clear() error
 	IsExists(content string) (bool, error)
+	SaveUser(u *User) error
+	RetrieveUser(u *User) (*User, error)
 }
 
 var ErrNoSavedTasks = errors.New("No saved tasks")
+
 //var ErrNoPastTasks = errors.New("No saved tasks")
 
 type Task struct {
-	ID		  int
-	Content   string
+	ID      int
+	Content string
 	//Deadline time.Time
-	Created	  time.Time
+	Created   time.Time
 	Completed bool
 }
 
-
+type User struct {
+	Username string
+	Chatid   int
+}

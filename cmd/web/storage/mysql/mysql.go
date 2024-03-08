@@ -1,8 +1,9 @@
 package mysql
 
 import (
-	"fmt"
 	"database/sql"
+	"fmt"
+
 	_ "github.com/go-sql-driver/mysql"
 
 	"taskbot/cmd/web/storage"
@@ -30,7 +31,7 @@ func New(dsn string) (*Storage, error) {
 
 func (s *Storage) Save(t *storage.Task) error {
 	stmt := "INSERT INTO tasks (content, created) VALUES (?, UTC_TIMESTAMP())"
-	
+
 	_, err := s.db.Exec(stmt, t.Content)
 
 	if err != nil {
@@ -39,8 +40,33 @@ func (s *Storage) Save(t *storage.Task) error {
 
 	return nil
 }
+func (s *Storage) SaveUser(u *storage.User) error {
+	stmt := "INSERT INTO users (chatid, username) VALUES (?, ?)"
+	_, err := s.db.Exec(stmt, u.Chatid, u.Username)
+	if err != nil {
+		return err
+	}
 
-func (s *Storage) Tasks() ( []*storage.Task, error ) {
+	return nil
+}
+
+func (s *Storage) RetrieveUser(u *storage.User) (*storage.User, error) {
+	stmt := "SELECT FROM users where username = ?"
+	row := s.db.QueryRow(stmt, u.Username)
+	var retrievedUser storage.User
+	err := row.Scan(&retrievedUser.Username, &retrievedUser.Chatid)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// No rows were returned, indicating no matching user
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &retrievedUser, nil
+}
+
+func (s *Storage) Tasks() ([]*storage.Task, error) {
 	stmt := `SELECT id, content, created FROM tasks`
 
 	rows, err := s.db.Query(stmt)
@@ -73,7 +99,6 @@ func (s *Storage) Tasks() ( []*storage.Task, error ) {
 
 	return tasks, nil
 }
-
 
 //func (s *Storage) PastTasks() ( []*storage.Task, error ) {
 //	stmt := `SELECT content, deadline, created FROM tasks
@@ -167,7 +192,7 @@ func (s *Storage) Complete(id int) error {
 //}
 
 func (s *Storage) IsExists(content string) (bool, error) {
-	stmt :=	"SELECT * FROM tasks where content = ?"
+	stmt := "SELECT * FROM tasks where content = ?"
 	result, err := s.db.Exec(stmt, content)
 	if err != nil {
 		return false, err
@@ -185,14 +210,17 @@ func (s *Storage) IsExists(content string) (bool, error) {
 		return false, fmt.Errorf("More than one tasks with the same data.")
 	}
 }
-
 func (s *Storage) Init() error {
 	stmt := `
 	CREATE TABLE IF NOT EXISTS tasks (
     id INT AUTO_INCREMENT PRIMARY KEY,
     content VARCHAR(255) UNIQUE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    completed BOOLEAN 
+    completed BOOLEAN
+	);
+	CREATE TABLE IF NOT EXISTS users (
+		username TEXT PRIMARY KEY NOT NULL,
+		chatid INTEGER NOT NULL
 	);
 	`
 	_, err := s.db.Exec(stmt)
@@ -202,5 +230,3 @@ func (s *Storage) Init() error {
 
 	return nil
 }
-
-

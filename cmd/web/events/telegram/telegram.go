@@ -10,24 +10,24 @@ import (
 )
 
 type Processor struct {
-	tg		*telegram.Client
+	tg      *telegram.Client
 	offset  int
 	storage storage.Storage
 }
 
 type Meta struct {
-	ChatID	 int
+	ChatID   int
 	Username string
 }
 
-var ( 
+var (
 	ErrUnknownEventType = errors.New("Unknown event type.")
-	ErrUnknownMetaType = errors.New("Unknown meta type.")
+	ErrUnknownMetaType  = errors.New("Unknown meta type.")
 )
 
 func New(client *telegram.Client, storage storage.Storage) *Processor {
-	return &Processor {
-		tg:		 client,
+	return &Processor{
+		tg:      client,
 		storage: storage,
 	}
 }
@@ -35,7 +35,7 @@ func New(client *telegram.Client, storage storage.Storage) *Processor {
 func (p *Processor) Fetch(limit int) ([]events.Event, error) {
 	updates, err := p.tg.Updates(p.offset, limit)
 	if err != nil {
-		return nil, e.WrapIfErr("can't get events" , err)
+		return nil, e.WrapIfErr("can't get events", err)
 	}
 
 	if len(updates) == 0 {
@@ -48,7 +48,7 @@ func (p *Processor) Fetch(limit int) ([]events.Event, error) {
 		res = append(res, event(u))
 	}
 
-	p.offset = updates[len(updates) - 1].ID + 1
+	p.offset = updates[len(updates)-1].ID + 1
 
 	return res, nil
 }
@@ -93,14 +93,14 @@ func event(update telegram.Update) events.Event {
 
 	if updateType == events.Message {
 		//fmt.Println("id---", update.Message.Chat.ID, "---id")
-		res.Meta = Meta {
-			ChatID: update.Message.Chat.ID,
+		res.Meta = Meta{
+			ChatID:   update.Message.Chat.ID,
 			Username: update.Message.From.Username,
 		}
 	}
 
 	return res
- 
+
 }
 
 func fetchText(update telegram.Update) string {

@@ -11,12 +11,13 @@ const msgHello = "Hi there \n\n" + msgHelp
 
 const (
 	msgUnknownCommand = "Unknown command"
-	msgNoSavedTasks = "You have no saved task"
-	msgNoPastTasks = "There are no past tasks"
-	msgSaved = "Task is saved."
-	msgRemoved = "Task is removed."
-	msgCompleted = "Task is completed."
-	msgAlreadyExists = "You have already have this task in your list"
-
+	msgNoSavedTasks   = "You have no saved task"
+	msgNoPastTasks    = "There are no past tasks"
+	msgSaved          = "Task is saved."
+	msgRemoved        = "Task is removed."
+	msgCompleted      = "Task is completed."
+	msgAlreadyExists  = "You have already have this task in your list"
+	msgPlsRegister    = "Please, register! /register"
+	msgUserExist      = "Greetings!"
 	msgIncorrectInput = "Incorrept input"
 )
