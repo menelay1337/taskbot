@@ -12,7 +12,7 @@ type Storage struct {
 	db *sql.DB
 }
 
-func New(dsn string) (*sql.DB, error) {
+func New(dsn string) (*Storage, error) {
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return nil, err
@@ -24,14 +24,14 @@ func New(dsn string) (*sql.DB, error) {
 		return nil, err
 	}
 
-	return db, nil
+	return &Storage{db: db}, nil
 
 }
 
 func (s *Storage) Save(t *storage.Task) error {
 	stmt := "INSERT INTO tasks (content, created) VALUES (?, UTC_TIMESTAMP())"
 	
-	result, err := s.db.Exec(stmt, t.Content)
+	_, err := s.db.Exec(stmt, t.Content)
 
 	if err != nil {
 		return err
@@ -53,14 +53,14 @@ func (s *Storage) Tasks() ( []*storage.Task, error ) {
 	var tasks []*storage.Task
 
 	for rows.Next() {
-		var t task
+		var t *storage.Task
 
-		err = rows.Scan(&t.Content, &t,Created)
+		err = rows.Scan(&t.ID, &t.Content, &t.Created)
 		if err != nil {
 			return nil, err
 		}
 
-		tasks = append(tasks, task)
+		tasks = append(tasks, t)
 	}
 
 	if err = rows.Err(); err != nil {
@@ -128,6 +128,24 @@ func (s *Storage) Remove(id int) error {
 	return nil
 }
 
+func (s *Storage) Complete(id int) error {
+	stmt := "UPDATE tasks SET completed = 1 WHERE id = ?"
+	result, err := s.db.Exec(stmt, id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected != 1 {
+		return fmt.Errorf("Task wasn't completed")
+	}
+
+	return nil
+}
+
 //func (s *Storage) Clear() error {
 //	stmt := "DELETE FROM tasks WHERE deadline < UTC_TIMESTAMP()"
 //
@@ -161,11 +179,28 @@ func (s *Storage) IsExists(content string) (bool, error) {
 	}
 	if rowsAffected == 1 {
 		return true, nil
-	} else uf rowsAffected == 0 {
+	} else if rowsAffected == 0 {
 		return false, nil
 	} else {
 		return false, fmt.Errorf("More than one tasks with the same data.")
 	}
+}
+
+func (s *Storage) Init() error {
+	stmt := `
+	CREATE TABLE IF NOT EXISTS tasks (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    content VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed BOOLEAN 
+	);
+	`
+	_, err := s.db.Exec(stmt)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 

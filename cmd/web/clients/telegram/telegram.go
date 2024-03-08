@@ -8,17 +8,23 @@ import (
 	"strconv"
 	"encoding/json"
 	
-	"taskbot/internal/errors"
+	"taskbot/internal/e"
 )
 
 type Client struct {
 	host	 string // 
 	basePath string // tg-bot.com/bot<token>
-	client http.Client
+	client	 http.Client
 }
 
-func New(host string, token string) {
-	return Client {
+const (
+	getUpdatesMethod  = "getUpdates"
+	sendMessageMethod = "sendMessage"
+)
+
+
+func New(host string, token string) *Client {
+	return &Client {
 		host:		host,
 		basePath:   newBasePath(token),
 		client:		http.Client{},
@@ -37,7 +43,7 @@ func (c *Client) SendMessage(chatID int, text string) error {
 
 	_, err := c.doRequest(sendMessageMethod, q)
 	if err != nil {
-		return errors.WrapIfErr("can't send message:", err)
+		return e.WrapIfErr("can't send message:", err)
 	}
 
 	return nil
@@ -51,6 +57,7 @@ func (c *Client) Updates(offset int, limit int) ([]Update, error) {
 	q.Add("limit", strconv.Itoa(limit))
 
 	data, err := c.doRequest(getUpdatesMethod, q)
+
 	if err != nil {
 		return nil, err
 	}
@@ -61,16 +68,15 @@ func (c *Client) Updates(offset int, limit int) ([]Update, error) {
 		return nil, err
 	}
 
-
+	return res.Result, nil
 }
 
-const (
-	getUpdatesMethod = "getUpdates",
-	sendMessageMethod = "sendMessage",
-)
+
 
 func (c *Client) doRequest(method string, query url.Values) (data []byte, err error) {
-	defer func() { err = errors.WrapIfErr("can't do request", err) }()
+	defer func() { 
+		err = e.WrapIfErr("can't do request", err) 
+	}() 
 
 	u := url.URL {
 		Scheme: "https",
@@ -86,16 +92,19 @@ func (c *Client) doRequest(method string, query url.Values) (data []byte, err er
 	req.URL.RawQuery = query.Encode()
 
 	res, err := c.client.Do(req)
+
 	if err != nil {
 		return nil, err
 	}
-	defer func() { res.Body.Close() }()
+
+	defer func() { 
+		_ = res.Body.Close() 
+	}()
 
 	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
 
 	return body, err
 }
+
+
 

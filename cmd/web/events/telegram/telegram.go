@@ -4,19 +4,20 @@ import (
 	"errors"
 
 	"taskbot/cmd/web/clients/telegram"
+	"taskbot/cmd/web/events"
 	"taskbot/cmd/web/storage"
 	"taskbot/internal/e"
 )
 
 type Processor struct {
-	tg *telegram.Client
-	offset int
+	tg		*telegram.Client
+	offset  int
 	storage storage.Storage
 }
 
 type Meta struct {
-	ChatID	 int,
-	Username string,
+	ChatID	 int
+	Username string
 }
 
 var ( 
@@ -26,7 +27,7 @@ var (
 
 func New(client *telegram.Client, storage storage.Storage) *Processor {
 	return &Processor {
-		tg: client,
+		tg:		 client,
 		storage: storage,
 	}
 }
@@ -34,7 +35,7 @@ func New(client *telegram.Client, storage storage.Storage) *Processor {
 func (p *Processor) Fetch(limit int) ([]events.Event, error) {
 	updates, err := p.tg.Updates(p.offset, limit)
 	if err != nil {
-		return nil, errors.WrapIfError("can't get events" , err)
+		return nil, e.WrapIfErr("can't get events" , err)
 	}
 
 	if len(updates) == 0 {
@@ -44,7 +45,7 @@ func (p *Processor) Fetch(limit int) ([]events.Event, error) {
 	res := make([]events.Event, 0, len(updates))
 
 	for _, u := range updates {
-		res = append(res, event(u)):w
+		res = append(res, event(u))
 	}
 
 	p.offset = updates[len(updates) - 1].ID + 1
@@ -70,11 +71,12 @@ func (p *Processor) processMessage(event events.Event) error {
 	if err := p.doCmd(event.Text, meta.ChatID, meta.Username); err != nil {
 		return e.WrapIfErr("Can't process message", err)
 	}
+	return nil
 
 }
 
 func meta(event events.Event) (Meta, error) {
-	res, ok := event.Meta.(Meat)
+	res, ok := event.Meta.(Meta)
 	if !ok {
 		return Meta{}, e.WrapIfErr("Can't get meta", ErrUnknownMetaType)
 	}
@@ -83,13 +85,14 @@ func meta(event events.Event) (Meta, error) {
 }
 
 func event(update telegram.Update) events.Event {
-	updateType = fetchType(update)
+	updateType := fetchType(update)
 	res := events.Event{
 		Type: updateType,
 		Text: fetchText(update),
 	}
 
 	if updateType == events.Message {
+		//fmt.Println("id---", update.Message.Chat.ID, "---id")
 		res.Meta = Meta {
 			ChatID: update.Message.Chat.ID,
 			Username: update.Message.From.Username,
@@ -100,7 +103,7 @@ func event(update telegram.Update) events.Event {
  
 }
 
-func fetchText(update telegram.Uodate) string {
+func fetchText(update telegram.Update) string {
 	if update.Message == nil {
 		return ""
 	}
@@ -108,9 +111,9 @@ func fetchText(update telegram.Uodate) string {
 	return update.Message.Text
 }
 
-func fetchType(update telegram.Uodate) string {
+func fetchType(update telegram.Update) events.Type {
 	if update.Message == nil {
 		return events.Unknown
 	}
-	return events.Message.
+	return events.Message
 }
