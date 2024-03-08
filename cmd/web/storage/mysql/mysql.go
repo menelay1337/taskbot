@@ -212,18 +212,24 @@ func (s *Storage) IsExists(content string) (bool, error) {
 }
 func (s *Storage) Init() error {
 	stmt := `
-	CREATE TABLE IF NOT EXISTS tasks (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    content VARCHAR(255) UNIQUE NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    completed BOOLEAN
-	);
-	CREATE TABLE IF NOT EXISTS users (
-		username TEXT PRIMARY KEY NOT NULL,
-		chatid INTEGER NOT NULL
-	);
-	`
+    CREATE TABLE IF NOT EXISTS tasks (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        content VARCHAR(255) UNIQUE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        completed BOOLEAN
+    );
+`
+	stmt2 := `
+CREATE TABLE IF NOT EXISTS users (
+	username VARCHAR(255) PRIMARY KEY NOT NULL,
+	chatid INTEGER NOT NULL
+);
+`
 	_, err := s.db.Exec(stmt)
+	if err != nil {
+		return err
+	}
+	_, err = s.db.Exec(stmt2)
 	if err != nil {
 		return err
 	}
